@@ -11,7 +11,13 @@ import { Database } from './database';
  * @param database: Database
  * @param collection: string
  */
-export function generateGet(database: Database, collection: string): Route {
+export function generateGet(database: Database, collection: string, models: Map<string, any>): Route {
+    let includeModels = [];
+    getIncludeList(database.models)
+        .then((includes) => {
+            includeModels = includes;
+        })
+        .catch(err => { throw err; })
     return new Route(
         '/',
         'GET',
@@ -32,12 +38,11 @@ export function generateGet(database: Database, collection: string): Route {
                         }
                     );
             } else {
-                database.models.get(collection).findAll()
+                database.models.get(collection).findAll({ include: includeModels })
                     .then((objects: Array<any>) => {
                         res.json(objects);
                     })
                     .catch((err: NodeJS.ErrnoException) => {
-                        res.status(500);
                         res.json({
                             message: `Could not get ${collection}: ${err}`
                         });
@@ -284,4 +289,13 @@ export function generateDelete(database: Database, collection: string): Route {
             }
         }
     )
+}
+
+async function getIncludeList(models: Map<string, any>)
+{
+    const includes = new Array<any>();
+    models.forEach((value: any, key: string) => {
+        includes.push(value);
+    });
+    return includes;
 }
